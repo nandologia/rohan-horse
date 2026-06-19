@@ -1,4 +1,4 @@
-# Rohan Horse
+# Edoras Horse
 
 A standalone larger-breed horse mob for **Mineclonia**, with deep locomotion and
 behaviour: a four-tier gait system, per-horse speed genetics, hunger/thirst needs
@@ -36,8 +36,8 @@ horse mesh.
 
 ## Installation
 
-1. Copy the `rohan_horse` folder into your Mineclonia `mods/` directory.
-2. Enable **Rohan Horse** in your world's mod configuration.
+1. Copy the `edoras_horse` folder into your Mineclonia `mods/` directory.
+2. Enable **Edoras Horse** in your world's mod configuration.
 
 Get a horse via the creative spawn egg, or wait for one to spawn in grassland.
 

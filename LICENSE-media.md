@@ -1,4 +1,4 @@
-# Licensing of media and code in `rohan_horse`
+# Licensing of media and code in `edoras_horse`
 
 This mod is a combination of works under different licenses. Each component
 below is governed by the license noted against it. The two full license texts
@@ -9,7 +9,7 @@ are bundled in this folder:
 
 ## Model
 
-* `models/rohan_horse.b3d` — **GPLv3**
+* `models/edoras_horse.b3d` — **GPLv3**
   * Derived from Mineclonia's `mobs_mc_horse.b3d` (the horse mesh and rig), which
     is by **22i** (https://github.com/22i) and licensed GPLv3. This mod's model is
     a modified copy of that mesh (reshaped hoof geometry and resynthesised
@@ -19,22 +19,22 @@ are bundled in this folder:
 
 ## Textures
 
-* `textures/rohan_horse_black.png`, `..._brown.png`, `..._chestnut.png`,
+* `textures/edoras_horse_black.png`, `..._brown.png`, `..._chestnut.png`,
   `..._creamy.png`, `..._darkbrown.png`, `..._gray.png`, `..._white.png`,
   `..._markings_white.png`, `..._markings_whitefield.png`,
   `..._markings_blackdots.png`, `..._markings_whitedots.png` — **CC BY 4.0**
   * Coat and marking skins from the **PKZ Horse Rig** by **Endertainer007**,
     used verbatim (the files are unchanged; only renamed `horse_*` →
-    `rohan_horse_*`). The saddlebags rendered on the horse are part of these coat
+    `edoras_horse_*`). The saddlebags rendered on the horse are part of these coat
     skins.
   * Attribution: *"PKZ Horse Rig by Endertainer007 is licensed under CC BY 4.0."*
     https://creativecommons.org/licenses/by/4.0/
 
-* `textures/rohan_horse_saddlebag.png` — **CC BY 4.0**, by **nando**
+* `textures/edoras_horse_saddlebag.png` — **CC BY 4.0**, by **nando**
   * Original 16×16 inventory icon for the craftable saddlebag item. Not derived
     from any third-party art.
 
-* `textures/rohan_horse_blank.png` — **CC0 / public domain**
+* `textures/edoras_horse_blank.png` — **CC0 / public domain**
   * A blank (uniform/transparent) 128×128 base layer for the texture-overlay
     stack; not a creative work.
 

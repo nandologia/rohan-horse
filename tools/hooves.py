@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reshape the hoof (fetlock = the leg.*.3 segment) in rohan_horse.b3d.
+"""Reshape the hoof (fetlock = the leg.*.3 segment) in edoras_horse.b3d.
 
 make_anim.py copies the stock mesh verbatim, so this runs AFTER it (make_anim.py
 calls apply() at the end) to edit the hoof geometry across every body mesh
@@ -38,7 +38,7 @@ HOOF_NODES   = ("leg.front.left3", "leg.front.right3",
 HOOF_YMAX    = 1.0   # verts above this aren't the hoof (guards overlay meshes)
 
 DST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "models", "rohan_horse.b3d")
+                   "models", "edoras_horse.b3d")
 
 
 def apply(path=DST, width=HOOF_WIDTH, height=HOOF_HEIGHT, depth=HOOF_DEPTH,

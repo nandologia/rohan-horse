@@ -1,9 +1,9 @@
 --[[
-	Rohan Horse -- a standalone Mineclonia horse mob, forked from edoras_horse
-	as a larger breed with a deeper behaviour/physics model.
+	Edoras Horse -- a standalone Mineclonia horse mob, a larger breed built on
+	the canonical horse mesh with a deeper behaviour/physics model.
 
 	Uses the canonical horse mesh (mobs_mc_horse.b3d, copied here as
-	rohan_horse.b3d, then re-animated by tools/make_anim.py) because the
+	edoras_horse.b3d, then re-animated by tools/make_anim.py) because the
 	supplied coat textures share the exact Minecraft/Mineclonia horse UV layout
 	(128x128). The mesh exposes three texture layers, applied in order: chest
 	overlay, fur (base coat + optional markings), saddle overlay; and a
@@ -18,28 +18,28 @@
 	Coat textures: PKZ Horse coats from Edoras1 (CC BY 4.0).
 ]]
 
-local S = core.get_translator("rohan_horse")
+local S = core.get_translator("edoras_horse")
 local mob_class = mcl_mobs.mob_class
 
-local BLANK = "rohan_horse_blank.png"
+local BLANK = "edoras_horse_blank.png"
 
 -- Base coats and overlay markings, mirroring the canonical horse atlas.
 local horse_base = {
-	"rohan_horse_brown.png",
-	"rohan_horse_darkbrown.png",
-	"rohan_horse_white.png",
-	"rohan_horse_gray.png",
-	"rohan_horse_black.png",
-	"rohan_horse_chestnut.png",
-	"rohan_horse_creamy.png",
+	"edoras_horse_brown.png",
+	"edoras_horse_darkbrown.png",
+	"edoras_horse_white.png",
+	"edoras_horse_gray.png",
+	"edoras_horse_black.png",
+	"edoras_horse_chestnut.png",
+	"edoras_horse_creamy.png",
 }
 
 local horse_markings = {
 	"", -- none
-	"rohan_horse_markings_whitedots.png",  -- snowflake appaloosa
-	"rohan_horse_markings_blackdots.png",  -- sooty
-	"rohan_horse_markings_whitefield.png", -- paint
-	"rohan_horse_markings_white.png",      -- stockings and blaze
+	"edoras_horse_markings_whitedots.png",  -- snowflake appaloosa
+	"edoras_horse_markings_blackdots.png",  -- sooty
+	"edoras_horse_markings_whitefield.png", -- paint
+	"edoras_horse_markings_white.png",      -- stockings and blaze
 }
 
 -- Every coat x marking combination, as a 3-layer texture set the mesh expects.
@@ -60,7 +60,7 @@ for b = 1, #horse_base do
 end
 
 local horse = {
-	description = S("Rohan Horse"),
+	description = S("Edoras Horse"),
 	type = "animal",
 	_spawn_category = "creature",
 	runaway = true,
@@ -71,14 +71,14 @@ local horse = {
 	hp_max = 30,
 	xp_min = 1,
 	xp_max = 3,
-	-- Rohan horses are a larger, more imposing breed: the canonical mesh +
+	-- Edoras horses are a larger, more imposing breed: the canonical mesh +
 	-- collision box (visual_size 3.0, half-width 0.69825, height 1.6) scaled
 	-- up by ~1.2. The seat (driver_attach_at) is in model-local units so it
 	-- rides up with the mesh automatically; only the camera eye_offset and
 	-- step/eye heights are retuned below.
 	collisionbox = {-0.8379, 0, -0.8379, 0.8379, 1.92, 0.8379},
 	visual = "mesh",
-	mesh = "rohan_horse.b3d",
+	mesh = "edoras_horse.b3d",
 	visual_size = {x = 3.6, y = 3.6},
 	textures = horse_textures,
 	makes_footstep_sound = true,
@@ -137,7 +137,7 @@ local horse = {
 		eat = "mobs_mc_animal_eat_generic",
 		distance = 16,
 	},
-	-- Frame ranges authored by tools/make_anim.py into rohan_horse.b3d.
+	-- Frame ranges authored by tools/make_anim.py into edoras_horse.b3d.
 	-- All synthesised: walk 0-40 (true 4-beat) + trot 179-207 + canter 49-73 +
 	-- gallop 79-99 + idle 109-169. Four-tier driven gait: see horse:drive.
 	-- walk_speed lowered 25->18 so the slow walk doesn't out-cycle the trot.
@@ -184,7 +184,7 @@ local SADDLE_SLOT = 1
 local ARMOR_SLOT = 2
 local BAG_SLOT = 3
 local STORAGE_SIZE = 15            -- 5 x 3, like a horse's chest in Minecraft
-local SADDLEBAG_ITEM = "rohan_horse:saddlebag"
+local SADDLEBAG_ITEM = "edoras_horse:saddlebag"
 
 local function is_saddle_item (stack)
 	return stack:get_name () == "mcl_mobitems:saddle"
@@ -350,7 +350,7 @@ function horse:inv_formspec (inv_name, has_bag)
 	local fs = {
 		"formspec_version[4]",
 		"size[12.2,11.3]",
-		"label[0.6,0.5;" .. core.formspec_escape (S("Rohan Horse")) .. "]",
+		"label[0.6,0.5;" .. core.formspec_escape (S("Edoras Horse")) .. "]",
 		"label[0.6,1.1;" .. core.formspec_escape (S("Saddle")) .. "]",
 		slot_bg (0.6, 1.4, 1, 1),
 		"list[" .. list .. ";main;0.6,1.4;1,1;0]",
@@ -410,12 +410,12 @@ end
 
 function horse:open_inventory (clicker)
 	local name = clicker:get_player_name ()
-	local inv_name = "rohan_horse_inv_" .. name
+	local inv_name = "edoras_horse_inv_" .. name
 	local this = self
 	self:init_needs ()      -- so the condition panel shows real values
 	self:init_genetics ()
 	local function refresh ()
-		core.show_formspec (name, "rohan_horse:inv",
+		core.show_formspec (name, "edoras_horse:inv",
 			this:inv_formspec (inv_name, this:has_bag ()))
 	end
 	local inv = core.create_detached_inventory (inv_name, {
@@ -488,12 +488,12 @@ function horse:open_inventory (clicker)
 end
 
 core.register_on_player_receive_fields (function (player, formname, fields)
-	if formname ~= "rohan_horse:inv" or not fields.quit then return end
-	core.remove_detached_inventory ("rohan_horse_inv_" .. player:get_player_name ())
+	if formname ~= "edoras_horse:inv" or not fields.quit then return end
+	core.remove_detached_inventory ("edoras_horse_inv_" .. player:get_player_name ())
 end)
 
 core.register_on_leaveplayer (function (player)
-	core.remove_detached_inventory ("rohan_horse_inv_" .. player:get_player_name ())
+	core.remove_detached_inventory ("edoras_horse_inv_" .. player:get_player_name ())
 end)
 
 ------------------------------------------------------------------------
@@ -1142,10 +1142,10 @@ horse.ai_functions = {
 	mob_class.check_pace,
 }
 
-mcl_mobs.register_mob("rohan_horse:horse", horse)
+mcl_mobs.register_mob("edoras_horse:horse", horse)
 
 -- Spawn egg (creative / give). No natural spawner yet.
-mcl_mobs.register_egg("rohan_horse:horse", S("Rohan Horse"), "#c09e7d", "#523a28", 0)
+mcl_mobs.register_egg("edoras_horse:horse", S("Edoras Horse"), "#c09e7d", "#523a28", 0)
 
 ------------------------------------------------------------------------
 -- Saddlebag item + recipe (SWEN-style: 2 chests, 3 leather, 3 carpet).
@@ -1153,16 +1153,16 @@ mcl_mobs.register_egg("rohan_horse:horse", S("Rohan Horse"), "#c09e7d", "#523a28
 -- a 15-slot storage compartment that travels with the horse.
 ------------------------------------------------------------------------
 
-core.register_craftitem("rohan_horse:saddlebag", {
+core.register_craftitem("edoras_horse:saddlebag", {
 	description = S("Saddlebag"),
 	_doc_items_longdesc = S("A pair of leather saddlebags. Equip them on a "
 		.. "tamed horse to carry extra items."),
-	inventory_image = "rohan_horse_saddlebag.png",
+	inventory_image = "edoras_horse_saddlebag.png",
 	stack_max = 1,
 })
 
 core.register_craft({
-	output = "rohan_horse:saddlebag",
+	output = "edoras_horse:saddlebag",
 	recipe = {
 		{"mcl_chests:chest",     "",                      "mcl_chests:chest"},
 		{"mcl_mobitems:leather", "mcl_mobitems:leather",  "mcl_mobitems:leather"},
@@ -1172,7 +1172,7 @@ core.register_craft({
 
 ------------------------------------------------------------------------
 -- Natural spawning. Mirrors the vanilla mcl horse spawner (grass surface,
--- light >= 8, "creature" category) so Rohan horses populate the same
+-- light >= 8, "creature" category) so Edoras horses populate the same
 -- Plains/Savanna niche after the mcl horse spawner is disabled. Built on
 -- mobs_mc.animal_spawner (always present under Mineclonia). register_spawner
 -- must run at load time -- it errors if called after mod init.
@@ -1180,24 +1180,24 @@ core.register_craft({
 
 if mobs_mc and mobs_mc.animal_spawner then
 	-- Generous weights so herds are easy to find: vanilla horse was 5, and
-	-- sheep/pig/chicken sit at 10-12, so 30 makes Rohan horses the dominant
+	-- sheep/pig/chicken sit at 10-12, so 30 makes Edoras horses the dominant
 	-- Plains animal (filling the gap left by Animalia + the disabled mcl horse).
 	mcl_mobs.register_spawner(table.merge(mobs_mc.animal_spawner, {
-		name = "rohan_horse:horse",
+		name = "edoras_horse:horse",
 		weight = 30,
 		pack_min = 2,
 		pack_max = 6,
 		biomes = {"Plains", "SunflowerPlains"},
 	}))
 	mcl_mobs.register_spawner(table.merge(mobs_mc.animal_spawner, {
-		name = "rohan_horse:horse",
+		name = "edoras_horse:horse",
 		weight = 12,
 		pack_min = 2,
 		pack_max = 6,
 		biomes = {"#is_savannah"},
 	}))
-	core.log("action", "[rohan_horse] registered wild spawners (Plains w=30, Savanna w=12)")
+	core.log("action", "[edoras_horse] registered wild spawners (Plains w=30, Savanna w=12)")
 else
 	core.log("warning",
-		"[rohan_horse] mobs_mc.animal_spawner unavailable -- NO wild spawner registered")
+		"[edoras_horse] mobs_mc.animal_spawner unavailable -- NO wild spawner registered")
 end

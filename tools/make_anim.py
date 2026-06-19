@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Add canter + gallop + idle animations to the Mineclonia horse mesh,
-writing models/rohan_horse.b3d.
+writing models/edoras_horse.b3d.
 
 The stock mobs_mc_horse.b3d has ONE 40-frame walk in which only the four
 upper-leg bones swing; knees/neck/head/tail are static (the "stiff" look).
@@ -36,7 +36,7 @@ import b3d  # noqa: E402
 SRC = os.path.expanduser(
     "~/.var/app/org.luanti.luanti/.minetest/games/mineclonia/mods/"
     "ENTITIES/mobs_mc/models/mobs_mc_horse.b3d")
-DST = os.path.join(os.path.dirname(HERE), "models", "rohan_horse.b3d")
+DST = os.path.join(os.path.dirname(HERE), "models", "edoras_horse.b3d")
 
 # ---- tunables --------------------------------------------------------------
 WALK_LAST   = 41
