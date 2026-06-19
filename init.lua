@@ -1180,8 +1180,8 @@ core.register_craft({
 
 if mobs_mc and mobs_mc.animal_spawner then
 	-- Generous weights so herds are easy to find: vanilla horse was 5, and
-	-- sheep/pig/chicken sit at 10-12, so 30 makes Edoras horses the dominant
-	-- Plains animal (filling the gap left by Animalia + the disabled mcl horse).
+	-- sheep/pig/chicken sit at 10-12, so 30 makes Edoras horses a common
+	-- Plains animal.
 	mcl_mobs.register_spawner(table.merge(mobs_mc.animal_spawner, {
 		name = "edoras_horse:horse",
 		weight = 30,
