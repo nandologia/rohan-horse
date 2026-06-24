@@ -231,12 +231,14 @@ end
 
 -- Equip / remove. These do not move items; callers handle item transfer.
 function horse:apply_saddle ()
+	local newly_tamed = not self.tamed
 	self.saddle = "yes"
 	self.tamed = true
 	self:refresh_textures ()
 	core.sound_play ("mcl_armor_equip_leather", {
 		gain = 0.5, max_hear_distance = 8, pos = self.object:get_pos (),
 	}, true)
+	if newly_tamed then self:neigh () end
 end
 
 function horse:clear_saddle ()
@@ -284,12 +286,14 @@ function horse:has_bag ()
 end
 
 function horse:apply_bag ()
+	local newly_tamed = not self.tamed
 	self._bag = SADDLEBAG_ITEM
 	self.tamed = true
 	self:refresh_textures ()
 	core.sound_play ("mcl_armor_equip_leather", {
 		gain = 0.5, max_hear_distance = 8, pos = self.object:get_pos (),
 	}, true)
+	if newly_tamed then self:neigh () end
 end
 
 function horse:clear_bag ()
@@ -500,10 +504,16 @@ end)
 -- Riding.
 ------------------------------------------------------------------------
 
+-- Forward seat offset on the saddle (model-local Z; +Z = head). Stock seat was
+-- -1.75 (behind centre); tune this to sit the rider on the saddle/withers.
+local SEAT_FORWARD = -0.75
+
 -- Seat position on the canonical horse mesh (matches mobs_mc:horse).
 function horse:init_attachment_position ()
 	local vsize = self.object:get_properties().visual_size
-	self.driver_attach_at = {x = 0, y = 4.17, z = -1.75}
+	-- z is forward (+Z = head end). Stock mobs_mc seat was z=-1.75 (behind centre);
+	-- moved forward onto the saddle/withers. SEAT_FORWARD is the tuning lever.
+	self.driver_attach_at = {x = 0, y = 4.17, z = SEAT_FORWARD}
 	self.driver_scale = {x = 1 / vsize.x, y = 1 / vsize.y}
 	-- Raise the first-person camera so the horse's neck/head doesn't block
 	-- the view (stock mcl_mobs eye offset is y=3; edoras used y=8). Bumped to
@@ -514,6 +524,55 @@ function horse:init_attachment_position ()
 	self._gait_tier = 1
 	self._shift_up_held = false
 	self._shift_down_held = false
+end
+
+-- Rider pose. The stock player "sit_mount" clip throws the legs forward (Lego
+-- style); we override the rider's leg bones so they sit astride. NB the Leg_Right/
+-- Leg_Left bones carry a 180-degree-flipped rest frame, so axis senses are NOT
+-- obvious -- RIDE_LEG_SCALE mirrors mcl_player's bone_workaround_scales for the legs
+-- and the angles below need in-game tuning (flip a sign if a leg goes the wrong way).
+local RIDE_LEG_SCALE = vector.new (1, -1, -1)
+local RIDE_LEG_PITCH = 10     -- thigh tilt front-to-back (deg) -- this angle is good
+local RIDE_LEG_SPLAY = 45     -- outward (centre->out) abduction (deg), mirrored L/R
+
+-- Forward torso lean while galloping (deg), like the player's sneak lean. Applied
+-- to the "Body" bone, which mcl_serverplayer leaves alone while mounted (it only
+-- forces Body_Control) -- so this survives, same as the leg overrides. Body is the
+-- parent of the legs, so the whole rider tilts forward over the neck (jockey crouch).
+-- Negative pitches forward (jockey crouch); positive leans back. 0 = no lean.
+local RIDE_LEAN = -25
+
+-- Put the rider's legs into the straddle pose and lean the torso forward when the
+-- horse is galloping (anim "run"). Uses Mineclonia's helper (rot in degrees, applies
+-- the leg scale workaround); runs every tick while ridden, idempotent so it eases
+-- between lean/upright via the helper's 0.1s interpolation. Guarded if mcl_util absent.
+function horse:set_ride_pose (player)
+	if not (player and mcl_util and mcl_util.set_bone_position) then return end
+	mcl_util.set_bone_position (player, "Leg_Right",
+		nil, vector.new (RIDE_LEG_PITCH, 0, -RIDE_LEG_SPLAY), RIDE_LEG_SCALE)
+	mcl_util.set_bone_position (player, "Leg_Left",
+		nil, vector.new (RIDE_LEG_PITCH, 0,  RIDE_LEG_SPLAY), RIDE_LEG_SCALE)
+	local lean = (self._current_animation == "run") and RIDE_LEAN or 0
+	mcl_util.set_bone_position (player, "Body", nil, vector.new (lean, 0, 0), nil)
+end
+
+function horse:clear_ride_pose (player)
+	if not (player and player.set_bone_override) then return end
+	player:set_bone_override ("Leg_Right", {})
+	player:set_bone_override ("Leg_Left", {})
+	player:set_bone_override ("Body", {})
+end
+
+-- Wrap mob_class attach/detach so the straddle pose is applied on mount and
+-- cleared on every dismount path (sneak, buck, death, water).
+function horse:attach (player, force_server_side)
+	mob_class.attach (self, player, force_server_side)
+	self:set_ride_pose (player)
+end
+
+function horse:detach (player, offset)
+	self:clear_ride_pose (player)
+	mob_class.detach (self, player, offset)
 end
 
 -- Only a saddled horse can be driven.
@@ -850,9 +909,6 @@ function horse:graze ()
 		self._hunger = math.min (NEED_MAX, (self._hunger or 0) + gain)
 	end
 	self._forage_for = nil
-	core.sound_play ("mobs_mc_animal_eat_generic", {
-		gain = 0.6, max_hear_distance = 12, pos = self.object:get_pos (),
-	}, true)
 end
 
 -- Per-horse top speed (blocks/sec) for each gait at this horse's quality level,
@@ -1139,10 +1195,166 @@ function horse:on_rightclick (clicker)
 	end
 end
 
+-- Hoof gait sounds (ridden only). Luanti plays a node's sounds.footstep CLIENT-SIDE
+-- for the local player's own movement only -- there is no per-step event for mobs,
+-- and synthesising the rhythm by triggering single clops per footfall never sounded
+-- right (esp. the gallop, whose paired beats land finer than the ~0.1s server tick).
+-- So instead we LOOP a real per-gait, per-surface recording for as long as the horse
+-- holds that gait on that ground -- the recording carries the true rhythm and timbre.
+-- 16 loops = {walk,trot,canter,gallop} x {hard,dirt,gravel,sand}; CC0/CC BY sources
+-- are credited in LICENSE-media.md.
+local HOOF_HEAR      = 16     -- max_hear_distance
+local HOOF_MIN_SPEED = 0.5    -- below this the horse counts as stopped (loop off)
+local HOOF_FADE_STEP = 6.0    -- gain/s when fading a loop out on a gait/surface change
+
+local EAT_GAIN = 0.7          -- chewing loop volume while head-down grazing (hunger)
+local EAT_HEAR = 12
+
+-- Ambient neigh: an occasional whinny while unridden + calm, plus one on taming.
+local NEIGH_GAIN = 0.8
+local NEIGH_HEAR = 24
+local NEIGH_MIN  = 18.0       -- random seconds between ambient neighs
+local NEIGH_MAX  = 50.0
+
+-- anim name (set by horse:drive) -> gait key. "run" is the gallop clip.
+local GAIT_OF = {walk = "walk", trot = "trot", canter = "canter", run = "gallop"}
+
+-- Per-surface loudness: damped ground (sand/dirt) is quieter than a ringing hard
+-- surface. The loops are all normalised to the same peak; this is the level knob.
+local SURFACE_GAIN = {hard = 0.9, gravel = 0.7, dirt = 0.5, sand = 0.4}
+
+-- A node's own footstep sound NAME -> our surface category (reuses Mineclonia's
+-- material tagging). Unmatched ground falls back to "dirt".
+local SURFACE_TAG = {
+	sand = "sand", gravel = "gravel",
+	dirt = "dirt", grass = "dirt", snow = "dirt", mud = "dirt",
+	hard = "hard", stone = "hard", wood = "hard", metal = "hard",
+	glass = "hard", ice = "hard",
+}
+
+-- Which (gait, surface) cells ship a dedicated loop. The BigSoundBank set (CC0,
+-- June 2026) covers walk on hard/dirt/gravel and trot/canter on dirt/gravel; gallop
+-- reuses the canter dirt/gravel loops sped up to 1.2x. Any surface a gait lacks
+-- falls back to that gait's "dirt" loop.
+local GAIT_SURFACES = {
+	walk   = {hard = true, dirt = true, gravel = true},          -- sand -> dirt
+	trot   = {dirt = true, gravel = true},                       -- hard, sand -> dirt
+	canter = {dirt = true, gravel = true},                       -- hard, sand -> dirt
+	gallop = {dirt = true, gravel = true},                       -- hard, sand -> dirt
+}
+
+-- GAIT_LOOP[gait][surface] = looping sound name (files in sounds/).
+local GAIT_LOOP = {}
+for _, g in ipairs ({"walk", "trot", "canter", "gallop"}) do
+	GAIT_LOOP[g] = {}
+	for _, s in ipairs ({"hard", "dirt", "gravel", "sand"}) do
+		local use = GAIT_SURFACES[g][s] and s or "dirt"
+		GAIT_LOOP[g][s] = "edoras_horse_gait_" .. g .. "_" .. use
+	end
+end
+
+-- Classify the ground under the horse into a surface category, or nil if it isn't
+-- over a node with a footstep sound.
+local function surface_for (self)
+	local node = self.standing_on
+	if not node or node == "air" or node == "ignore" then return nil end
+	local def = core.registered_nodes[node]
+	local fs = def and def.sounds and def.sounds.footstep
+	if not fs or not fs.name then return nil end
+	for tag in fs.name:gmatch ("[a-z]+") do
+		if SURFACE_TAG[tag] then return SURFACE_TAG[tag] end
+	end
+	return "dirt"
+end
+
+-- Stop the current gait loop, fading it out so it doesn't click off.
+local function stop_gait_loop (self)
+	if self._loop_handle then
+		core.sound_fade (self._loop_handle, HOOF_FADE_STEP, 0.0)
+		self._loop_handle = nil
+	end
+	self._loop_key = nil
+end
+
+-- Start/stop/switch the per-gait, per-surface loop to match the horse's state each
+-- tick. Ridden only; loops while moving forward on solid ground, silent otherwise.
+function horse:update_hoofsteps (dtime)
+	local key, sound, gain
+	if self.driver then
+		local gait = GAIT_OF[self._current_animation or ""]
+		local in_water = core.get_item_group (self.standing_in or "", "water") > 0
+		local vel = self.object:get_velocity ()
+		local speed = math.sqrt (vel.x * vel.x + vel.z * vel.z)
+		if gait and not in_water and speed >= HOOF_MIN_SPEED then
+			local surf = surface_for (self)
+			if surf then
+				key   = gait .. "|" .. surf
+				sound = GAIT_LOOP[gait][surf]
+				gain  = SURFACE_GAIN[surf]
+			end
+		end
+	end
+	if key == self._loop_key then return end     -- gait + surface unchanged
+	stop_gait_loop (self)
+	if sound then
+		self._loop_handle = core.sound_play (sound, {
+			object = self.object,                -- follows the horse as it moves
+			gain = gain,
+			max_hear_distance = HOOF_HEAR,
+			loop = true,
+		})
+		self._loop_key = key
+	end
+end
+
+-- Loop the chewing sound while the horse is head-down eating (hunger graze only,
+-- not drinking). Attached to the horse so it follows it and stops on unload.
+function horse:update_eating ()
+	local eating = self._grazing and self._forage_for == "hunger"
+		and not self.driver and not self._fleeing
+	if eating then
+		if not self._eat_handle then
+			self._eat_handle = core.sound_play ("edoras_horse_eat_grass", {
+				object = self.object,
+				gain = EAT_GAIN,
+				max_hear_distance = EAT_HEAR,
+				loop = true,
+			})
+		end
+	elseif self._eat_handle then
+		core.sound_fade (self._eat_handle, HOOF_FADE_STEP, 0.0)
+		self._eat_handle = nil
+	end
+end
+
+-- Play a random whinny at the horse (ambient timer + on taming).
+function horse:neigh (gain)
+	core.sound_play ("edoras_horse_neigh", {
+		object = self.object,
+		gain = gain or NEIGH_GAIN,
+		max_hear_distance = NEIGH_HEAR,
+		pitch = 0.94 + math.random () * 0.12,   -- slight per-call variation
+	})
+end
+
+-- Tick the ambient-neigh countdown; whinny now and then when unridden and calm.
+function horse:update_ambient (dtime)
+	if self.driver or self._fleeing then return end
+	self._neigh_timer = (self._neigh_timer
+		or NEIGH_MIN + math.random () * (NEIGH_MAX - NEIGH_MIN)) - dtime
+	if self._neigh_timer <= 0 then
+		self._neigh_timer = NEIGH_MIN + math.random () * (NEIGH_MAX - NEIGH_MIN)
+		self:neigh ()
+	end
+end
+
 -- Per-tick custom logic: drain biological needs (which may buck the rider),
 -- make an unridden horse flee at a canter, and let the rider dismount by sneaking.
 function horse:do_custom (dtime)
 	self:update_needs (dtime)
+	self:update_hoofsteps (dtime)
+	self:update_eating ()
+	self:update_ambient (dtime)
 	-- Flee animation overlay: check_flee sets gowp_animation = "canter" so the path
 	-- follower replays the canter clip; reinforce it here (do_custom runs after the
 	-- movement step, so it wins if anything reset the clip to walk/stand).
@@ -1160,6 +1372,7 @@ function horse:do_custom (dtime)
 		self.object:set_velocity ({x = 0, y = v.y, z = 0})
 	end
 	if self.driver then
+		self:set_ride_pose (self.driver)   -- re-assert in case an anim/model reset it
 		local controls = self.driver:get_player_control()
 		if controls.sneak then
 			self:detach(self.driver, {x = 1, y = 0, z = 1})
@@ -1168,6 +1381,11 @@ function horse:do_custom (dtime)
 end
 
 function horse:on_die ()
+	stop_gait_loop (self)
+	if self._eat_handle then
+		core.sound_fade (self._eat_handle, HOOF_FADE_STEP, 0.0)
+		self._eat_handle = nil
+	end
 	local pos = self.object:get_pos ()
 	if self.driver then
 		self:detach(self.driver, {x = 1, y = 0, z = 1})

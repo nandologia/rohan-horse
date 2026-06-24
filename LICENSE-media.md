@@ -38,6 +38,29 @@ are bundled in this folder:
   * A blank (uniform/transparent) 128×128 base layer for the texture-overlay
     stack; not a creative work.
 
+## Sounds
+
+The horse sounds are looping per-gait, per-surface hoof clips
+(`sounds/edoras_horse_gait_<gait>_<surface>.ogg`), a looping chewing clip
+(`edoras_horse_eat_grass.ogg`), and two whinnies (`edoras_horse_neigh.{1,2}.ogg`).
+Each was converted to mono, normalised, and (for the loops) crossfade-looped.
+
+All horse sounds come from **BigSoundBank.com** by **Joseph SARDIN**, triple-licensed
+**CC0 1.0 / WTFPL / Public Domain** (https://bigsoundbank.com/licenses.html — no
+attribution required; credited here as a courtesy). Used for:
+
+* `edoras_horse_gait_walk_dirt`, `…_walk_gravel`, `…_walk_hard`
+* `edoras_horse_gait_trot_dirt`, `…_trot_gravel`
+* `edoras_horse_gait_canter_dirt`, `…_canter_gravel`
+* `edoras_horse_gait_gallop_dirt`, `…_gallop_gravel` — the canter loops sped up to 1.2x
+* `edoras_horse_eat_grass`, `edoras_horse_neigh.1`, `edoras_horse_neigh.2`
+
+Surfaces without a dedicated clip fall back in code to that gait's `dirt` loop
+(walk has no `sand`; trot, canter, and gallop have no `hard`/`sand`).
+
+Being CC0 / public domain, none of these require attribution and all are freely
+redistributable, compatible with the mod's GPLv3 umbrella.
+
 ## Code
 
 * `init.lua`, `tools/*.py` — **GPLv3**, by **nando**
