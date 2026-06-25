@@ -1,3 +1,8 @@
 __pycache__/
 *.pyc
 *.bak
+
+# GIMP source/working files and temp swap files -- never ship these
+*.xcf
+*.xcf~
+.xdp-*

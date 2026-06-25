@@ -38,11 +38,6 @@ are bundled in this folder:
   * A blank (uniform/transparent) 128×128 base layer for the texture-overlay
     stack; not a creative work.
 
-* `textures/edoras_horse_mearas_dye.png` — **CC BY 4.0**, by **nando**
-  * Original 16×16 inventory icon for the Mearas Dye craftitem (the Potion of the
-    Mearas brewing reagent). Procedurally generated, not derived from any
-    third-party art.
-
 ## Sounds
 
 The horse sounds are looping per-gait, per-surface hoof clips

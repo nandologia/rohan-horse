@@ -39,16 +39,9 @@ coat textures on an upscaled copy of the canonical Mineclonia horse mesh.
 * **Recolouring** — a tamed horse can be reskinned by hand. Right-click it with
   **redstone dust** to cycle the **base coat**, or with **lapis lazuli** to cycle
   the **markings**. (See *Recolouring* below.)
-* **Dyed saddle pad** — a craftable cloth pad, coloured by the dye(s) used to make
-  it (one dye, or two blended — red + white = pink). Lay it on a tamed horse and it
-  drapes the back and upper flanks with colour, under the saddle. (See *Saddle pad*.)
 * **Breeding** — feed two tamed horses to breed a persistent foal.
 * **Lead-following** — with the optional `leads` mod, a leashed horse trails the
   player under its own power instead of being dragged.
-* **Potion of the Mearas** — a brewed potion that converts a **tamed** vanilla
-  horse (`mobs_mc:horse`) into an Edoras horse, so you can upgrade one you already
-  raised instead of waiting for a wild Edoras spawn. Any saddle/armor it wears (and
-  its tame/owner) carry over. Requires the optional `mcl_potions`.
 * **Reduced fall damage** — the heavier breed takes half fall damage.
 * **Natural spawning** — populates Plains and Savanna (requires `mobs_mc`).
 
@@ -73,11 +66,11 @@ On a horse **on the ground**:
 | Open the gear/inventory panel | **Sneak + right-click** |
 | Recolour the base coat | right-click with **redstone dust** |
 | Recolour the markings | right-click with **lapis lazuli** |
-| Saddle / armor / saddlebag / saddle pad | right-click with that item |
+| Saddle / armor / saddlebag | right-click with that item |
 | Feed / heal / breed | right-click with a follow food (wheat, sugar, apple, hay, carrot, golden apple/carrot) |
 | Water (refills thirst) | right-click with a **water bucket** |
 
-Remove the saddle, armor, bag, or pad by taking it out of the gear panel
+Remove the saddle, armor, or bag by taking it out of the gear panel
 (**Sneak + right-click**).
 
 > **Note:** because redstone and lapis are intercepted to recolour the horse, you
@@ -107,44 +100,6 @@ appearance persists across world reloads. In creative mode no dye is consumed.
 [carpet][carpet][carpet]
 ```
 
-## Saddle pad
-
-Craft a **saddle pad** shapelessly from **3 carpet + a dye** (any arrangement):
-
-```
-[carpet] [carpet] [carpet] [dye]
-```
-
-Add a **second dye** to blend a colour — e.g. **red + white = pink**:
-
-```
-[carpet] [carpet] [carpet] [dye] [dye]
-```
-
-The pad takes the average of the dye(s) you use, and that colour is stored on the
-item (so two differently-dyed pads don't stack). Right-click a **tamed** horse with
-the pad to lay it on — it drapes the back and upper flanks under the saddle.
-Remove it from the gear panel (Sneak + right-click). In creative no carpet/dye is
-consumed.
-
-## Potion of the Mearas recipe
-
-Needs `mcl_potions`. Craft the dye from horse-charming foods, then brew it:
-
-1. **Craft** the **Mearas Dye** on a crafting table:
-
-   ```
-   [sugar]       [white dye]    [sugar]
-   [gold carrot] [golden apple] [gold carrot]
-   [sugar]       [white dye]    [sugar]
-   ```
-
-2. **Brew** in a brewing stand: `Mearas Dye` + Water Bottles → **Potion of the Mearas**
-
-Then **sneak + use** the potion on a **tamed** vanilla horse to turn it into an
-Edoras horse. Its saddle and armor (and tame/owner) carry over. An untamed horse
-must be tamed first.
-
 ## Installation
 
 1. Copy the `edoras_horse` folder into your Mineclonia `mods/` directory.
@@ -156,16 +111,13 @@ Get a horse via the creative spawn egg, or wait for one to spawn in grassland.
 
 * **Required:** `mcl_mobs` (core Mineclonia mob framework).
 * **Optional:**
-  * `mobs_mc` — natural spawners + the vanilla horse the conversion potion targets.
+  * `mobs_mc` — natural spawners.
   * `mcl_formspec` — gear-panel slot backgrounds.
   * `leads` — lead-following.
-  * `mcl_potions` + `mcl_core` + `mcl_farming` + `mcl_dyes` — the Potion of the
-    Mearas and its recipe.
 
-  Recolouring uses redstone (`mcl_redstone`) and lapis (`mcl_core`); the saddle
-  pad uses carpet and dyes (`mcl_dyes`). All are present in any normal Mineclonia
-  install. The mod loads and runs without any optional dependency — the related
-  features just stay inactive (an undyed pad simply renders white).
+  Recolouring uses redstone (`mcl_redstone`) and lapis (`mcl_core`); all are
+  present in any normal Mineclonia install. The mod loads and runs without any
+  optional dependency — the related features just stay inactive.
 
 No changes to Mineclonia's own files are required.
 
