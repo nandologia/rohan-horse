@@ -49,96 +49,78 @@ GRAZE_BEG,  GRAZE_LEN  = 210, 40   # head-down self-feeding loop (Luanti 209-249
 CANTER_AMP = 1.5      # leg-swing exaggeration vs the measured walk amplitude
 GALLOP_AMP = 2.0
 TROT_AMP   = 1.2      # springy, less reaching than canter
-BODY_BOB_CANTER = 0.03   # was 0.06->0.10; body bob swings the head, kept minimal
-BODY_BOB_GALLOP = 0.05   # was 0.10->0.16
-BODY_BOB_TROT   = 0.09   # was 0.13; trot bobs TWICE per stride (bob_freq below)
-NECK_NOD_CANTER = math.radians(1.5)   # was 2.5; head nod amplitude (downward dip)
-NECK_NOD_GALLOP = math.radians(1.5)   # was 2.5
-NECK_NOD_TROT   = math.radians(1.4)   # was 2.0; head stays fairly level at a trot
-# Nods per stride. MUST be an integer, or the looped clip pops at the seam:
-# the closing keyframe is u=0, and only whole cycles return cleanly to zero
-# there. So the gentlest "faster" step from the old 1/stride is 2.
+BODY_BOB_CANTER = 0.03   # body bob swings the head, kept minimal
+BODY_BOB_GALLOP = 0.05
+BODY_BOB_TROT   = 0.09   # trot bobs TWICE per stride (bob_freq below)
+NECK_NOD_CANTER = math.radians(1.5)   # head nod amplitude (downward dip)
+NECK_NOD_GALLOP = math.radians(1.5)
+NECK_NOD_TROT   = math.radians(1.4)   # head stays fairly level at a trot
+# Nods per stride. MUST be an integer, or the looped clip pops at the seam: the closing
+# keyframe is u=0, and only whole cycles return cleanly to zero there.
 NECK_FREQ_CANTER = 1      # one clean up/down nod per stride (real canter)
 NECK_FREQ_GALLOP = 2      # 2-cycle head bob per stride
 NECK_FREQ_TROT   = 2      # 2-beat gait -> head bobs twice per stride
-# Neutral neck carriage. The stock rig holds the head too steep/upright; this
-# constant downward pitch lowers the rest pose for ALL clips (see where it is
-# applied to rest["neck"] in main). Negative = head down/forward.
+# Neutral neck carriage. The stock rig holds the head too steep/upright; this constant
+# downward pitch lowers the rest pose for ALL clips. Negative = head down/forward.
 NECK_REST_PITCH = math.radians(-15.0)
-# Constant forward pitch of the neck during gallop -- a real horse extends its
-# neck low and forward at speed. This is ADDED on top of NECK_REST_PITCH, so it
-# was cut from -28 to -13 when the rest was lowered 15deg (keeps the previously
-# tuned ~-28 absolute gallop carriage). Flip the sign if it leans back/up.
+# Constant forward pitch of the neck during gallop (a real horse extends its neck low
+# and forward at speed), ADDED on top of NECK_REST_PITCH. Flip the sign if it leans up.
 NECK_PITCH_GALLOP = math.radians(-13.0)
 IDLE_SWAY       = math.radians(4.0)
-# Walk head bob. The stock walk neck bobs fast and shallow; a real horse nods
-# ONCE per stride, slowly. We overwrite the stock neck walk keys with a
-# DOWNWARD-biased nod: the head dips toward the ground and returns to rest, never
-# rising above neutral (freq MUST be integer, like the gaits, or the loop pops).
+# Walk head bob: a real horse nods ONCE per stride, slowly. We overwrite the stock neck
+# walk keys with a DOWNWARD-biased nod -- the head dips toward the ground and returns to
+# rest, never rising above neutral (freq MUST be integer, like the gaits, or it pops).
 WALK_NECK_NOD  = math.radians(7.0)    # depth of the downward dip (bigger = deeper)
 WALK_NECK_FREQ = 1                     # one slow nod per stride
 
-# Graze (self-feeding) pose: the unmounted horse lowers its whole head/neck so the
-# mouth is ~ground level, then chews. GRAZE_NECK_PITCH swings the neck DOWN about its
-# own local X (same convention as the nods: negative = down). GRAZE_HEAD_PITCH then
-# straightens the rest "L" so the head continues the neck's line (mouth reaches the
-# ground) -- it is PRE-multiplied onto the head's rest rotation, which rotates the head
-# about the NECK(parent)-frame X axis, so the head bone's flipped local frame is
-# irrelevant and the sign sense matches the neck (negative = nose down). TUNE these two
-# in-game: deepen GRAZE_NECK_PITCH to reach lower, adjust GRAZE_HEAD_PITCH until the L
-# between neck and head closes; flip its sign if the head bends the wrong way.
+# Graze (self-feeding) pose: lower the whole head/neck so the mouth is ~ground level,
+# then chew. GRAZE_NECK_PITCH swings the neck DOWN about its own local X (negative =
+# down). GRAZE_HEAD_PITCH straightens the rest "L" so the head continues the neck's line;
+# it is PRE-multiplied onto the head rest rotation (rotates about the NECK-frame X), so
+# the head bone's flipped local frame is irrelevant and negative = nose down, like the
+# neck. Flip GRAZE_HEAD_PITCH's sign if the head bends the wrong way.
 GRAZE_NECK_PITCH = math.radians(-72.0)
 GRAZE_HEAD_PITCH = math.radians(-46.0)
 GRAZE_MUNCH_AMP  = math.radians(3.0)   # gentle chewing nod on the head
 GRAZE_MUNCH_FREQ = 3                   # chews per loop (integer -> no seam pop)
 
 # ---- buck (rodeo) ----------------------------------------------------------
-# A real bronco buck (NOT a see-saw): the head stays LOW throughout while the
-# HINDQUARTERS heave high. Two overlapping beats of sin(2*pi*u):
-#   GATHER (rear, peak u=0.25): forelegs raise up & forward, body gathers slightly,
-#     head stays low. A small wind-up, not a tall rear.
-#   PLUNGE (buck, peak u=0.75): drop onto the forelegs (they reach forward to land),
-#     body pitches nose-DOWN HARD *and lifts* (BUCK_PLUNGE_RISE) so the rear end flies
-#     up while the forefeet stay above ground, hind legs kick out high behind. This is
-#     the big, dominant beat. The head/neck stay pinned LOW (grazing carriage) the
-#     whole time, never tossed up.
-# rear/buck are the two non-overlapping half-waves so the poses sum. The mob code
-# hops the whole horse in place. Signs may need flipping in-game. A couple extra
-# frames (30) smooth the action. b3d keyframes 260-290 -> Luanti 259-289.
+# This clip animates only the LEGS and the neck/head toss. The gross rear/leap/kick
+# pitch is done at RUNTIME on the whole OBJECT (init.lua BUCK_OBJ_*), which pivots about
+# the feet and throws the rider; pitching this body bone instead would rock about its
+# mid-barrel origin (the "rocking horse" look). Two half-waves of sin(2*pi*u):
+#   GATHER (rear, peak u=0.25): forelegs raise up & forward, neck tosses up.
+#   PLUNGE (buck, peak u=0.75): forelegs reach forward to land, hind legs kick out high
+#     behind, neck/head drop. This is the dominant beat, fired while airborne.
+# b3d keyframes 260-290 -> Luanti 259-289. Signs may need flipping in-game.
 BUCK_BEG, BUCK_LEN = 260, 30
-# Body tilt about X: a SMALL nose-up gather, then a BIG nose-down plunge (rear end
-# high). Kept asymmetric on purpose so it reads as a buck, not a see-saw.
-BUCK_GATHER_PITCH = math.radians(7.0)
-BUCK_PLUNGE_PITCH = math.radians(40.0)
-BUCK_REAR_RISE    = 0.08               # slight body lift in the gather
-# Raise the whole body during the plunge so the FRONT legs don't punch underground.
-# The plunge pitches nose-down about the body origin, and the front leg hips sit
-# ~4.4 model-units forward of it, so the front feet would drop ~4.4*sin(40deg)~=2.8
-# units. Lifting the body the same amount keeps the front feet at ground level and
-# throws the hindquarters even higher (a real buck pivots about the planted forefeet).
-# Tune in-game: lower if the horse floats, raise if the forefeet still sink.
-BUCK_PLUNGE_RISE  = 2.5
+# Spine flex on top of the object pitch. Gather is 0 (a grounded nose-up body bone is
+# the centre see-saw we avoid); only the plunge keeps a small nose-down round of the
+# back, firing airborne (u=0.75) where centre rotation looks correct. Y-lift is unused:
+# the object pitches about the feet and the horse is airborne through the plunge.
+BUCK_GATHER_PITCH = math.radians(0.0)
+BUCK_PLUNGE_PITCH = math.radians(6.0)
+BUCK_REAR_RISE    = 0.0
+BUCK_PLUNGE_RISE  = 0.0
 # Forelegs: swing up & forward in the gather (-=forward on the -X leg axis); reach
 # forward (less, straighter) to land on during the plunge.
 BUCK_FRONT_LIFT   = math.radians(50.0)
 BUCK_FRONT_KNEE   = math.radians(42.0) # foreleg knee curls while raised (gather only)
 BUCK_FRONT_FET    = math.radians(32.0)
 BUCK_FRONT_REACH  = math.radians(20.0) # forelegs reach forward to plant on landing
-# Hind legs: planted in the gather; thrown out behind HIGH in the plunge (+=back).
-BUCK_BACK_KICK    = math.radians(62.0)
-BUCK_BACK_FET     = math.radians(38.0)
-# Head/neck TOSS during the buck (user June 24 2026 -- supersedes the older "pin the
-# head low as if grazing" carriage). The head now PUMPS up and down with each buck:
-# it lifts UP through the rear/gather (peak u=0.25) and drops back DOWN through the
-# plunge/kick (peak u=0.75), keyed off the same sin(2pi*u) the legs use, so head and
-# hooves pulse together. BASE = mid carriage the toss swings about (negative = head
-# down/forward, same convention as NECK_REST/GRAZE); TOSS = swing amplitude (positive
-# = lifts up on the rear). This is baked into the buck clip's neck/head KEYS, so it
-# animates every variant skeleton and survives a re-run (no runtime bone override).
-# Tune in-game: bigger TOSS = bigger pump; if the head dips when it should rear, flip
-# the TOSS sign; raise BASE toward 0 for a generally higher head through the buck.
+# Hind legs: planted in the gather; thrown out behind HIGH in the plunge (+=back). The
+# rest leg hangs straight DOWN, so the angle is measured from there: 90deg = straight
+# out horizontal, >90 = up-and-out. Stacked on the ~50deg nose-down object pitch (rear
+# already up), this reads as the legs thrown high up and out at the apex.
+BUCK_BACK_KICK    = math.radians(80.0)
+BUCK_BACK_FET     = math.radians(52.0)
+# Head/neck TOSS: the head pumps up through the rear/gather (peak u=0.25) and drops back
+# down through the plunge/kick (peak u=0.75), keyed off the same sin(2pi*u) the legs use
+# so head and hooves pulse together. BASE = mid carriage the toss swings about (negative
+# = head down/forward); TOSS = swing amplitude (positive = lifts up on the rear). Tune
+# in-game: if the head dips when it should rear, flip the TOSS sign.
 BUCK_NECK_BASE = math.radians(-30.0)
-BUCK_NECK_TOSS = math.radians(28.0)   # neck raise reduced (was 38): swings -58 .. -2
+BUCK_NECK_TOSS = math.radians(28.0)
 BUCK_HEAD_BASE = math.radians(-20.0)
 BUCK_HEAD_TOSS = math.radians(26.0)   # head follows, a touch less than the neck
 # As the neck rears UP (rear = the positive half of the buck wave), tuck the head
@@ -175,10 +157,9 @@ FETLOCK_GROUP_MULT = {"front": 1.0, "back": 1.6}
 # past the leg's footfall (the fold itself is the positive half of a sine, so its
 # crest sits 0.25 of a stride after this offset). FRONT hooves fold during the
 # forward swing (in the air): offset KNEE_PHASE+FETLOCK_LAG -> crest at u-phase
-# ~0.58, mid-swing. The HIND hooves instead flick back at the END of stance, when
-# the leg is at its furthest-BACK push-off extreme (user June 2026: ~80deg back
-# at the trailing position, NOT straight). The hip is furthest back at u-phase
-# 0.25 (peak of the backward swing), so the back offset is 0.0 (crest = 0.25).
+# ~0.58, mid-swing. The HIND hooves instead flick back at the END of stance, when the
+# leg is at its furthest-BACK push-off extreme (~80deg back, NOT straight). The hip is
+# furthest back at u-phase 0.25 (peak of the backward swing), so the back offset is 0.0.
 # Shift a group's value by +/-0.25 to slide its fold earlier/later in the stride.
 FETLOCK_PEAK_PHASE = {"front": KNEE_PHASE + FETLOCK_LAG, "back": 0.0}
 # Per-gait peak knee flex (segment 2): trot is the crisp "high knee", gallop
@@ -209,8 +190,8 @@ SNAP_PHASE   = 0.40
 # Body "rocking-horse" pitch (about X) added on top of the vertical bob: canter
 # and gallop rock, walk/trot stay level. PITCH_PHASE aligns the dip with the
 # footfalls (tune sign/phase in-game).
-BODY_PITCH_CANTER = math.radians(1)     # was 2->6; the rock swings the head a lot
-BODY_PITCH_GALLOP = math.radians(1.5)   # was 3->8
+BODY_PITCH_CANTER = math.radians(1)     # the rock swings the head a lot, keep small
+BODY_PITCH_GALLOP = math.radians(1.5)
 PITCH_PHASE       = 0.0
 
 # footfall phase per leg (fraction of stride). Right-lead.
@@ -411,13 +392,12 @@ def main():
 
     def fetlock_rot(base, group, u, phase, amp_scale, knee_bend, fetlock_bend,
                     snap_amp, rot0):
-        # The hoof folds BACK over the positive half of a sine and is neutral the
-        # rest of the stride -- the forward box offset (hooves.py) imitates the
-        # hoof resting on the ground, so there is no stance ground-leveling or
-        # forward snap (which used to rotate the fetlock forward). Folds the same
-        # way on all legs via FETLOCK_SIGN (not the per-group knee sign). The
-        # crest sits at FETLOCK_PEAK_PHASE per group: front folds in mid-swing,
-        # the hind hooves flick back at the furthest-back push-off (see tunable).
+        # The hoof folds BACK over the positive half of a sine and is neutral the rest
+        # of the stride -- the forward box offset (hooves.py) imitates the hoof resting on
+        # the ground, so there is no stance ground-leveling. Folds the same way on all
+        # legs via FETLOCK_SIGN (not the per-group knee sign). The crest sits at
+        # FETLOCK_PEAK_PHASE per group: front folds in mid-swing, the hind hooves flick
+        # back at the furthest-back push-off.
         ph = phase[base]
         s_fet = max(0.0, math.sin(2 * math.pi * (u - ph - FETLOCK_PEAK_PHASE[group])))
         amp = FETLOCK_SIGN * fetlock_bend * FETLOCK_GROUP_MULT[group]

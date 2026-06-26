@@ -94,8 +94,8 @@ local horse = {
 	type = "animal",
 	_spawn_category = "creature",
 	runaway = true,
-	-- Flee speed when hit (movement_speed * this). Default 1.25 was a skating
-	-- "fast walk"; 0.85 (~5.7 bps) matches the canter the horse flees with.
+	-- Flee speed when hit (movement_speed * this); 0.85 (~5.7 bps) matches the
+	-- canter the horse flees with.
 	run_bonus = 0.85,
 	hp_min = 15,
 	hp_max = 30,
@@ -116,7 +116,7 @@ local horse = {
 	floats = 1,
 	-- Calm, confined idle behaviour: approach food at a walk (not a sprint),
 	-- and wander only a few blocks at a slow pace rather than freezing.
-	follow_bonus = 0.4,   -- food-follow speed = movement_speed * this (was 1.2)
+	follow_bonus = 0.4,   -- food-follow speed = movement_speed * this
 	pace_bonus = 0.35,    -- slow wandering
 	pace_width = 3,       -- stay within ~3 blocks horizontally
 	pace_height = 2,
@@ -133,21 +133,18 @@ local horse = {
 	-- 1-block hop); the GAITS values below are sized to clear 1.3-2.4 nodes.
 	jump_height = 10,
 	stepheight = 1.1,    -- taller breed clears a little more
-	-- Fall protection. Forking from a plain mob table left these at the generic
-	-- mob_class defaults (safe 3.0 / mult 1.0); a clean gallop jump apexes at
-	-- ~13^2/64 = 2.6 nodes (just under 3.0, so no harm), but with the jump key
-	-- HELD the horse can re-contact terrain mid-ascent and fire a second jump
-	-- (physics.lua jump_timer is only 0.2s vs ~0.8s airtime), stacking to ~4
-	-- nodes and taking fall damage on landing. Match the canonical mobs_mc horse
-	-- so a tall/double hop is survivable.
+	-- Fall protection. With the jump key HELD the horse can re-contact terrain
+	-- mid-ascent and fire a second jump (jump_timer 0.2s vs ~0.8s airtime),
+	-- stacking to ~4 nodes; these match the canonical mobs_mc horse so a
+	-- tall/double hop is survivable.
 	_safe_fall_distance = 6.0,
 	fall_damage_multiplier = 0.5,
 	head_eye_height = 1.82,
 	can_ride_boat = false,
 	steer_class = "controls",
-	-- Force server-side driving so self.driver is always set (client-side
-	-- CSM mounting returns before setting it, which would break our
-	-- right-click / sneak dismount). Can revisit for smoother prediction.
+	-- Force server-side driving so self.driver is always set (client-side CSM
+	-- mounting returns before setting it, which would break our right-click /
+	-- sneak dismount).
 	_csm_driving_enabled = false,
 	saddle = "no",
 	drops = {
@@ -168,9 +165,7 @@ local horse = {
 		distance = 16,
 	},
 	-- Frame ranges authored by tools/make_anim.py into edoras_horse.b3d.
-	-- All synthesised: walk 0-40 (true 4-beat) + trot 179-207 + canter 49-73 +
-	-- gallop 79-99 + idle 109-169. Four-tier driven gait: see horse:drive.
-	-- walk_speed lowered 25->18 so the slow walk doesn't out-cycle the trot.
+	-- Four-tier driven gait: see horse:drive.
 	animation = {
 		stand_start  = 109, stand_end  = 169, stand_speed  = 12,
 		walk_start   = 0,   walk_end   = 40,  walk_speed   = 18,
@@ -178,7 +173,7 @@ local horse = {
 		canter_start = 49,  canter_end = 73,  canter_speed = 38,
 		run_start    = 79,  run_end    = 99,  run_speed    = 34,
 		graze_start  = 209, graze_end  = 249, graze_speed  = 15,
-		buck_start   = 259, buck_end   = 289, buck_speed   = 45,
+		buck_start   = 259, buck_end   = 289, buck_speed   = 33,  -- 30 frames / BUCK_PERIOD(0.9s)
 	},
 	follow = {
 		"mcl_farming:wheat_item",
@@ -601,13 +596,11 @@ local SEAT_FORWARD = -0.75
 -- Seat position on the canonical horse mesh (matches mobs_mc:horse).
 function horse:init_attachment_position ()
 	local vsize = self.object:get_properties().visual_size
-	-- z is forward (+Z = head end). Stock mobs_mc seat was z=-1.75 (behind centre);
-	-- moved forward onto the saddle/withers. SEAT_FORWARD is the tuning lever.
+	-- z is forward (+Z = head end), onto the saddle/withers. SEAT_FORWARD is the lever.
 	self.driver_attach_at = {x = 0, y = 4.17, z = SEAT_FORWARD}
 	self.driver_scale = {x = 1 / vsize.x, y = 1 / vsize.y}
-	-- Raise the first-person camera so the horse's neck/head doesn't block
-	-- the view (stock mcl_mobs eye offset is y=3; edoras used y=8). Bumped to
-	-- 12 for this taller breed -- the head was still blocking the view at 9.5.
+	-- Raise the first-person camera so the horse's neck/head doesn't block the view
+	-- (tuned up for this taller breed; stock mcl_mobs eye offset is y=3).
 	self.driver_eye_offset = {x = 0, y = 12, z = 0}
 	-- Every mount starts in Walk; clear the shift-key edge state so a key still
 	-- held from the previous rider doesn't auto-trigger a tap.
@@ -642,7 +635,7 @@ local RIDE_LEAN = -25
 -- which point in the buck cycle is the forward extreme.
 local RIDE_BUCK_LEAN = -16      -- base forward lean while bucking (-=forward)
 local RIDE_BUCK_ROCK = 16       -- rocks back toward the original upright pose
-local RIDE_BUCK_FREQ = 9.4      -- rock angular speed (rad/s); ~ 2*pi / hop interval
+local RIDE_BUCK_FREQ = 7.0      -- rock angular speed (rad/s); ~ 2*pi / BUCK_PERIOD (0.9s)
 local RIDE_BUCK_ARM_PITCH = -120  -- right arm swung up overhead (deg)
 local RIDE_BUCK_ARM_OUT   = -25   -- ...and out to the side (z)
 local RIDE_BUCK_ARM_WAVE  = 18    -- arm waves this much with the rhythm
@@ -905,10 +898,37 @@ local TAME_TEMPER_BUCK = 5       -- temper gained per failed (bucked) attempt
 local TAME_FOOD_TEMPER = 3       -- temper gained per food item fed to a wild horse
 local TAME_RIDE_MIN    = 1.5     -- bareback seconds before the verdict (min)
 local TAME_RIDE_MAX    = 3.5     -- bareback seconds before the verdict (max)
--- Rodeo struggle: while a wild horse is ridden bareback it plays the buck clip
--- and hops in place trying to throw the rider.
-local BUCK_HOP_INTERVAL = 0.67   -- seconds between in-place hops (~one per buck clip cycle)
-local BUCK_HOP_SPEED    = 4.5    -- upward velocity of each hop (apex ~0.3 nodes)
+-- Rodeo struggle: while a wild horse is ridden bareback it plays the buck clip and
+-- leaps trying to throw the rider. The buck CLIP (mesh) animates the legs + neck toss;
+-- the GROSS pitch is done here on the whole OBJECT so the horse pivots about its FEET
+-- (a true rear/plunge) and the attached rider tilts with it -- pitching the body bone
+-- instead would rock about the mid-barrel origin (the "rocking horse" look) and leave
+-- the rider level.
+-- One full gather->leap->hang->kick->land cycle. MUST track the buck clip's play time
+-- (buck_speed in the animation def: clip is 30 frames, so buck_speed = 30/PERIOD).
+local BUCK_PERIOD       = 0.9
+-- Upward launch velocity per leap. Mob gravity is ~32 m/s^2 (see jump_height note up
+-- top), so apex (nodes) ~= speed^2 / 64 and airtime ~= speed / 16; at 7.0, ~0.77 nodes
+-- and ~0.44 s of hang. Raise for more hang/height (keep airtime under the grounded gap
+-- so it lands before the next leap), lower to keep it close to the ground.
+local BUCK_HOP_SPEED    = 7.0
+local BUCK_LAUNCH_PHASE = 0.5    -- cycle fraction at which the leap fires (end of gather)
+-- Cycle fraction at which the nose-DOWN kick begins: just past the apex, so the body
+-- floats up level (the "solid moment") and only snaps the kick once hanging at the top.
+local BUCK_KICK_PHASE   = 0.72
+-- Whole-object pitch (degrees) about the feet. A body pitching about its centre WHILE
+-- GROUNDED reads as a see-saw, so the grounded gather stays near level and the big
+-- nose-DOWN kick fires only in the airborne arc (rotating about the centre of mass
+-- mid-air is correct), easing back to level by touchdown so it lands flat.
+local BUCK_OBJ_REAR       = 5    -- small grounded nose-up coil (deg); raise = more see-saw
+local BUCK_OBJ_PLUNGE     = 50   -- airborne nose-down kick (deg); higher = hindquarters fly higher
+local BUCK_OBJ_PITCH_SIGN = 1    -- flip to -1 if rear/plunge pitch the wrong way in-game
+-- Forward lunge: a short hop in the facing direction on each leap (so it travels a
+-- little instead of bouncing on one spot), plus a small random turn (bronco spin). The
+-- lunge is hazard-clamped (buck_lunge_safe) so it NEVER carries the rider into a wall,
+-- off a ledge, or into lava/fire -- only the upward leap happens when ahead is unsafe.
+local BUCK_LUNGE_SPEED  = 2.4              -- forward velocity added at launch (~1 node)
+local BUCK_YAW_KICK     = math.rad (10)    -- max random turn each leap (0 = no spin)
 -- On arrival the horse stays head-down grazing for a random spell in this range
 -- before it eats and wanders off (keeps it rooted to one spot, not a quick peck).
 local GRAZE_HOLD_MIN = 7.0
@@ -958,6 +978,8 @@ local SWIM_SINK_GAIN  = 4.0         -- proportional pull toward the target depth
 local SWIM_SINK_MAX   = 3.0         -- clamp on the corrective vertical speed (m/s)
 local SWIM_BREACH_VY  = 2.0         -- above this upward speed, physics is launching the
                                     -- horse out of the water -- don't cancel the leap
+local WATERFALL_SINK  = 1.5         -- downward speed forced while immersed in a flowing
+                                    -- column, so floats=1 buoyancy can't climb a waterfall
 
 -- True if the move this tick ran into something on a horizontal axis. While
 -- floating, mcl_mobs zeroes stepheight, so the only way onto a shore is the
@@ -987,6 +1009,21 @@ local function water_surface_y (pos)
 		end
 	end
 	return base + 4.5
+end
+
+-- True if the horse is immersed in a FLOWING-water column (a waterfall or strong
+-- vertical current), as opposed to calm source water. liquidtype distinguishes the two;
+-- requiring water at head height as well rules out merely wading a shallow stream. Used
+-- to cancel floats=1 buoyancy so the horse can't ride the current up a waterfall, while
+-- leaving ordinary swimming/surfacing in source-water lakes alone.
+local function in_flowing_column (self, pos)
+	local feet = core.registered_nodes[self.standing_in or ""]
+	if not (feet and feet.liquidtype == "flowing"
+		and core.get_item_group (self.standing_in, "water") > 0) then
+		return false
+	end
+	local head = core.get_node (vector.offset (pos, 0, SWIM_HEIGHT * 0.75, 0)).name
+	return core.get_item_group (head, "water") > 0
 end
 
 -- Lead following (integrates with the "leads" mod by SilverSandstone, if present).
@@ -1856,6 +1893,35 @@ function horse:trample (dtime)
 	end
 end
 
+-- True if the horse can safely lunge ~one node along `dir` (a unit horizontal vector)
+-- from `pos`: the space ahead at body height is clear (no wall), there is solid ground
+-- to come down on within a few nodes (not a ledge/drop), and that footing is not
+-- dangerous (lava/fire/damaging). Used to clamp the rodeo forward-hop so a bucking
+-- horse never carries its clinging rider into a hazard.
+local function buck_lunge_safe (pos, dir)
+	if not pos then return false end
+	local ahead = vector.new (pos.x + dir.x, pos.y, pos.z + dir.z)
+	-- Wall: the two body-height nodes ahead must be passable.
+	for dy = 1, 2 do
+		local def = core.registered_nodes[core.get_node (vector.offset (ahead, 0, dy, 0)).name]
+		if not def or def.walkable then return false end
+	end
+	-- Ground: scan down; the first solid node found is the landing footing -- it must
+	-- be within reach (no long drop) and not dangerous.
+	for dy = 0, -3, -1 do
+		local n = core.get_node (vector.offset (ahead, 0, dy, 0))
+		if core.get_item_group (n.name, "lava") > 0
+			or core.get_item_group (n.name, "fire") > 0 then
+			return false
+		end
+		local def = core.registered_nodes[n.name]
+		if def and def.walkable then
+			return (def.damage_per_second or 0) <= 0    -- solid footing -> safe unless it hurts
+		end
+	end
+	return false              -- nothing solid within 3 nodes down -> ledge/drop
+end
+
 -- Per-tick custom logic: drain biological needs (which may buck the rider),
 -- make an unridden horse flee at a canter, and let the rider dismount by sneaking.
 function horse:do_custom (dtime, moveresult)
@@ -1881,6 +1947,19 @@ function horse:do_custom (dtime, moveresult)
 		local v = self.object:get_velocity ()
 		self.object:set_velocity ({x = 0, y = v.y, z = 0})
 	end
+	-- Don't let floats=1 buoyancy carry the horse UP a waterfall (ridden or not): while
+	-- immersed in a flowing-water column, force a gentle descent instead of rising. The
+	-- rider/AI can still steer horizontally out of the column; source-water lakes (normal
+	-- swimming) are unaffected. Runs after the physics step, so this velocity.y wins.
+	local water_pos = self.object:get_pos ()
+	local in_column = water_pos and in_flowing_column (self, water_pos)
+	if in_column then
+		local v = self.object:get_velocity ()
+		if v.y > -WATERFALL_SINK then
+			v.y = -WATERFALL_SINK
+			self.object:set_velocity (v)
+		end
+	end
 	-- Half-submerge a riderless horse in deep water (feet AND the node below both
 	-- water -- so it's swimming, not wading at the shore). Stock floats=1 buoyancy
 	-- (in the physics step that ran before this) jumps it up to ride on the
@@ -1890,18 +1969,18 @@ function horse:do_custom (dtime, moveresult)
 	-- Don't pin the horse down while it's pressed against a shore (horiz collision)
 	-- or already leaping clear (v.y high): that's it climbing out, and overriding
 	-- velocity.y here would cancel the engine's breach leap. Let it float up and go.
-	if not self.driver
+	-- Skip entirely in a flowing column -- the block above owns velocity.y there.
+	if not self.driver and not in_column
 		and core.get_item_group (self.standing_in or "", "water") > 0
 		and core.get_item_group (self.standing_on or "", "water") > 0
 		and not horiz_collision (moveresult) then
-		local pos = self.object:get_pos ()
-		local surface = pos and water_surface_y (pos)
+		local surface = water_pos and water_surface_y (water_pos)
 		if surface then
 			local v = self.object:get_velocity ()
 			if v.y < SWIM_BREACH_VY then
 				local target_y = surface - SWIM_HEIGHT * SWIM_SUBMERGE
 				v.y = math.max (-SWIM_SINK_MAX, math.min (SWIM_SINK_MAX,
-					(target_y - pos.y) * SWIM_SINK_GAIN))
+					(target_y - water_pos.y) * SWIM_SINK_GAIN))
 				self.object:set_velocity (v)
 			end
 		end
@@ -1911,20 +1990,52 @@ function horse:do_custom (dtime, moveresult)
 	local bucking = self.driver and not self.tamed
 	if bucking then
 		self._bucking = true
-		self._buck_phase = (self._buck_phase or 0) + dtime
-		self:set_animation ("buck")   -- buck clip now animates the head-toss itself
-		self._buck_hop = (self._buck_hop or 0) + dtime
-		if self._buck_hop >= BUCK_HOP_INTERVAL then
-			self._buck_hop = 0
-			local v = self.object:get_velocity ()
-			self.object:set_velocity ({x = v.x, y = BUCK_HOP_SPEED, z = v.z})
+		local prev = self._buck_phase or 0
+		self._buck_phase = prev + dtime
+		self:set_animation ("buck")   -- buck clip animates the legs + neck toss
+
+		-- Whole-object pitch about the feet (see the BUCK_OBJ_* notes): a level gather,
+		-- a level float up, then the nose-down kick at the apex easing back to level by
+		-- touchdown. Re-applied every tick so it wins over the engine's yaw step.
+		local u = (self._buck_phase % BUCK_PERIOD) / BUCK_PERIOD
+		local pitch_deg
+		if u < BUCK_LAUNCH_PHASE then
+			pitch_deg = BUCK_OBJ_REAR * math.sin (math.pi * u / BUCK_LAUNCH_PHASE)
+		elseif u < BUCK_KICK_PHASE then
+			pitch_deg = 0                        -- rise & hang: stay level
+		else
+			local w = (u - BUCK_KICK_PHASE) / (1 - BUCK_KICK_PHASE)
+			pitch_deg = -BUCK_OBJ_PLUNGE * math.sin (math.pi * w)
 		end
+		local pitch = math.rad (BUCK_OBJ_PITCH_SIGN * pitch_deg)
+		local yaw = self.object:get_yaw ()
+
+		-- Leap once per cycle (phase crossing BUCK_LAUNCH_PHASE, only when grounded): a
+		-- vertical launch + a hazard-clamped forward lunge + a small random yaw kick, so
+		-- it travels/spins a little instead of bouncing on one spot.
+		local pu = (prev % BUCK_PERIOD) / BUCK_PERIOD
+		local grounded = (not moveresult) or moveresult.touching_ground
+		if pu < BUCK_LAUNCH_PHASE and u >= BUCK_LAUNCH_PHASE and grounded then
+			if BUCK_YAW_KICK > 0 then
+				yaw = yaw + (math.random () * 2 - 1) * BUCK_YAW_KICK
+				self.object:set_yaw (yaw)
+			end
+			local v = self.object:get_velocity ()
+			v.y = BUCK_HOP_SPEED
+			local dir = vector.new (-math.sin (yaw), 0, math.cos (yaw))
+			if buck_lunge_safe (self.object:get_pos (), dir) then
+				v.x = v.x + dir.x * BUCK_LUNGE_SPEED
+				v.z = v.z + dir.z * BUCK_LUNGE_SPEED
+			end
+			self.object:set_velocity (v)
+		end
+		self.object:set_rotation ({x = pitch, y = yaw, z = 0})
 	elseif self._bucking then
-		-- Just stopped bucking (tamed, or the rider was thrown). Clear the state and
-		-- return to a normal stance, otherwise the buck clip keeps looping forever on
-		-- a now-riderless/tamed horse (nothing else resets a do_custom-set animation).
+		-- Just stopped bucking (tamed, or the rider was thrown). Clear the state, level
+		-- the object back out, and return to a normal stance -- otherwise the buck clip
+		-- loops forever and the horse stays tilted (nothing else resets either).
 		self._bucking = false
-		self._buck_hop = 0
+		self.object:set_rotation ({x = 0, y = self.object:get_yaw (), z = 0})
 		if not self._fleeing and not self._grazing then
 			self:set_animation ("stand")
 		end
@@ -2003,18 +2114,15 @@ horse.ai_functions = {
 mcl_mobs.register_mob("edoras_horse:horse", horse)
 
 ------------------------------------------------------------------------
--- Legacy orphan migration. This mod was once named "rohan_horse"; worlds played
--- back then still hold saved rohan_horse:horse entities, which now spam
--- 'LuaEntity name "rohan_horse:horse" not defined' every time their mapblock
--- loads, because that name no longer exists. An unknown entity can only be
--- cleared once its name is DEFINED again, so we register it as a tiny stub that,
--- on activation, RE-CREATES the horse as a proper edoras_horse:horse carrying the
--- same saved data, then removes itself. The rename was a pure "rohan_horse" ->
--- "edoras_horse" string swap (entity/item/texture names), so rewriting that prefix
--- across every saved string fully restores the horse -- tame state, owner, saddle,
--- bag, armor, coat textures and speed genetics all transfer. core.register_entity
--- needs the ":" prefix to register a name outside this mod's namespace. Safe to
--- delete this block once existing worlds have been roamed clean of old orphans.
+-- Legacy orphan migration. This mod was once named "rohan_horse"; older worlds still
+-- hold saved rohan_horse:horse entities that spam 'name not defined' on every mapblock
+-- load. An unknown entity can only be cleared once its name is DEFINED again, so we
+-- register it as a tiny stub that, on activation, re-creates the horse as a proper
+-- edoras_horse:horse carrying the same saved data, then removes itself. The rename was
+-- a pure "rohan_horse" -> "edoras_horse" string swap, so rewriting that prefix across
+-- every saved string restores everything (tame state, owner, tack, coat, genetics).
+-- core.register_entity needs the ":" prefix to register outside this mod's namespace.
+-- Safe to delete this block once worlds have been roamed clean of old orphans.
 ------------------------------------------------------------------------
 do
 	-- Recursively rewrite "rohan_horse" -> "edoras_horse" in every string within
